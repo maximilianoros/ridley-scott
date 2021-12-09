@@ -1,0 +1,282 @@
+---
+title: "Ridley Scott"
+author: "Maximiliano Ros"
+date: "7/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(scales)
+library(ggalt)
+library(ggtext)
+library(showtext)
+font_add(family="BRLNSR" ,regular="BRLNSR.TTF")
+showtext_auto()
+colores.eyd<- c("#FA8806","#ffde5c","#000000","#4F4F4F","#151515")
+library(igraph)
+```
+Ridley Scott, un director especial
+
+Con más de X años de trayectoria Mr.Scott ha logrado tener bajo su brazo la dirección de 27 películas, X cortos y una controversial publicidad de para Apple que cambiaría la forma de hacer marketing. 
+
+Polémico, controversial y X. Son todas palabras asociadas a este director, y con justicia. Pero en este artículo no hablaremos de nada de eso, sino de la parte más objetiva de su carrera. Espero que toda esta información les permita separar al autor de sus obras como lo hizo conmigo.
+```{r}
+#BASES
+ridley<- read_excel("ridley.xlsx")
+ridley$titulo[ridley$titulo=="Someone to Watch Over Me"]<- "Someone to Watch \nOver Me"
+ridley$titulo[ridley$titulo=="All the Money in the World"]<-" All the Money \nin the World"
+ridley$titulo[ridley$titulo=="1492:  Conquest of Paradise"]<-"1492:  Conquest \nof Paradise"
+```
+
+#PUNTAJES
+
+Como se anticipó lo controvertible de su persona se extiende a su filmografía. Para empezar, el 60% de sus films tienen mejor recepción de la audiencia que de los críticos, según datos de Rotten Tomatoes. Asimismo, once de ellas distan sustancialmente(mayor a diez puntos porcentuales) entre lo que indica el Tomatomer y el puntaje de los usarios. Esto último es lo que vemos en lo gráfico. 
+
+```{r}
+diferencias<-ridley %>%  summarise(fecha,titulo, tomatometer, audience, dife= tomatometer-audience)
+diferencias<- diferencias %>% arrange(desc(abs(dife)))
+nrow(diferencias[diferencias$dife<0, ])
+diferencias<-diferencias %>% filter(abs(dife)>0.1)
+
+diferencias.grafico<- diferencias %>% mutate(titulo=fct_reorder(titulo, fecha)) %>%  
+                                    ggplot(aes(x=tomatometer, xend=audience, y=titulo))+
+                                    geom_dumbbell(aes(x=tomatometer, xend=audience, y=titulo),size=3, color="#e3e2e1", colour_x = "#fa320a", colour_xend = "#f9d320")+
+                                    scale_x_continuous(labels = percent_format(),breaks = seq(0.25,0.85,0.15))+
+                                    labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Puntaje de sus películas según <span style='color:#fa320a;'>**tomatometer**</span> o <span style='color:#f9d320;'>**audiencia**</span>", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Rotten Tomatoes**.</span>")+
+                                    theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text = element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK"), axis.ticks.x = element_line())
+diferencias.grafico
+```
+
+La figura está ordenada descendentemente por el año de estreno, por eso aparece su última película "House of Gucci". Un resultado que hay que tomar con liviandad por ser tan reciente su publicación. Pero sirve para comparar con lo que ocurrió con el otro estreno de 2021, "The Last Duel". La segunda obtuvo un 85% en el tomatómetro y un 81% en la audiencia. 
+
+De todas formas si analizamos la imagen completa vemos que hay todo tipo de diferencias. Desde películas con dos altos puntajes como por ejemplo Black Hawk Down(2001) o con bajos como The Counselor (2013). Pero así también de todas las epocas, empezando con Legend (1985).  
+
+El caso más saliente es el de A Good Year (2006). Donde la crítica consideraba que Scott y Russell Crowe estaban fuera de su habitat natural, aunque la audiencia, aparentemente, consideró esta ´romcom´ como un acto de versatilidad y un reto después de lo que vimos en Gladiator (2000).
+
+#ACTORES
+
+
+\newpage
+
+
+#HISTORIA
+
+Lo primero que se viene a la mente a la mayoría de los amantes del cine cuando escucha el nombre de Ridley Scott son películas de época. Basta con mencionar Gladiator, Robin Hood o inclsive Kingdom of Heaven (Cruzada en español) e inclusive esto se profundiza con The Last Duel, lanzada este año. Bien otra mayoría podría pensar el género de ciencia fición, y mucha razón tendrían por éxitos como Alien, Blade Runner o The Martian. 
+
+Sin dudas lo que emerge de todo esto es que el director tiene un don para contar historias que no suceden en el presente. Los números reflejan esto mismo. El 60% de todos los films transita o en el pasado o en el futuro. Siendo un porcentaje sorprendetemente elevado. 
+
+```{r}
+historia<- ridley %>% summarise(fecha, titulo, presente,tiempo, año, director)
+historia1<- historia %>% group_by(presente) %>% summarise(cantidad=sum(director)) %>% mutate(presente2= case_when(presente==0 ~ "PASADO",
+          presente==1 ~ "PRESENTE",
+          presente==2 ~ "FUTURO", 
+          presente==4 ~  "FUERA DE \nLINEA TEMPORAL"), 
+         presente2=fct_reorder(presente2,cantidad, .desc = TRUE) )
+
+ggplot(historia1,aes(x=presente2, y=cantidad, fill=presente2, label=cantidad))+
+  geom_bar(stat='identity')+
+  scale_fill_manual(values=c("#FA8806",'#FFA500',"#FFD976","#FEFFBB"))+
+  geom_text(aes(x=presente2, y=cantidad, fill=presente2, label=cantidad), vjust=-0.5, family="BRLNSR")+
+  labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Cantidad de películas por época", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Rotten Tomatoes**.</span>")+
+  theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_markdown(size= 9.5, family = "BRLNSR", colour = "BLACK"), axis.ticks.x = element_blank(),axis.text.y = element_blank())
+                        
+```
+Con esto exhibido se puede ver las caráctiristicas que comparaten las películas de cada generación y sus diferencias. Comenzemos de atrás para adelante, como la historia misma.
+
+## PASADO
+En este apartado se analizan todas las películas que narren algún suceso histórico, es decir, desde épocas bíblicas como Exodus: Gods and KingsXXX  hasta las de familias renombradas los no tan antiguos como  All the Money  in the World.
+
+```{r}
+pasado<- ridley %>%  filter(presente==0)
+pasado %>% group_by(tiempo)%>% summarise(sum(director))
+```
+### PUNTAJES
+
+Ahora centrandonos en los puntajes de una base que tiene una plataforma mayor de votantes, y con la que el autor considera más homógenea y consistente en sus resultados, como es Letterboxd.
+
+```{r}
+puntajes<- pasado %>% summarise(fecha,titulo, director, letterboxd)
+
+ggplot(puntajes)+
+geom_segment(aes(x=titulo,xend=titulo,y=0,yend=letterboxd),size=1,position = position_dodge(width = 0.6))+
+  geom_point(aes(x=titulo, y=letterboxd),size=2, color='#FFA500', fill=alpha("#ffde5c",0.3), alpha=0.7,shape=21, stroke=2)+
+  scale_y_continuous(limit=c(0,5), breaks=seq(0,5,1))+
+   labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Puntaje de sus películas del pasado", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Rotten Tomatoes**.</span>")+
+                                    theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y= element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK"), axis.ticks.y = element_line(),axis.text.x= element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK", angle = 45, vjust = 0.5))
+ 
+```
+
+El resultado promedio es de 3.25, lo cual es considerable pero esperable considerando de que estamos en uno de los frentes donde el director se hace más fuerte. No es de sorprender que el resultado más saliente sea el de Gladiator. 
+
+Resta saber como le fue en taquilla. Si nos quedaramos solo con estos números podríamos tender a pensar que la mayoría son éxitos. Veamos si lo son o no. 
+
+### PRESUPUESTO Y RECAUDACION
+Se homogenizaron todos los montos a valores del 2021 para que sean comparables. Todo en precios actuales del 2021 de dólares estadounidenses.
+(no esta the duellists porque no tiene recaudacion)
+
+El gráfico es sustancialmente diferente al escenario esperado del autor. El benfecio (simple resta entre recaudación y presupuesto) como porcentaje del presupuesto es una medida inicial y muy superficial. Pero no por eso hay que dejar de lado porque es una buena aproximación de la realidad económica de una película. 
+
+```{r}
+plata<- pasado %>% summarise(fecha, titulo, budget.real,box.office.domestic.real, utilidad=(box.office.domestic.real-budget.real)/budget.real, letterboxd)
+
+plata<- plata %>% mutate(titulo=fct_reorder(titulo,fecha),                                                                color=case_when(utilidad<= 0 ~"PERDIDA",
+                 utilidad>0 ~ "BENEFICIO"))
+plata2<-plata[-c(1,10,11), ]
+
+
+ggplot(plata2, aes(x=titulo, y=utilidad, fill=color))+
+  geom_bar(stat="identity")+
+  geom_hline(yintercept=0)+
+  scale_fill_brewer(palette="YlOrRd")+
+  scale_y_continuous(labels = percent_format(), breaks=seq(-1,1,0.25))+
+  labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Beneficio sobre presupuesto de películas del pasado", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Wikipedia y Box Office Mojo**.</span>")+
+  theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK",angle = 45, vjust=0.6), axis.ticks.x = element_blank())
+
+```
+## PUNTAJES Y PLATA 
+Ahora lo que sería interesante es ver al conjunto. En el eje de abscisas se encuentran el beneficio porcentual sobre el presupuesto. Por supuesto en las ordenadas encontramos a los puntajes de Letterboxd 
+
+```{r}
+plata %>%filter(fecha<2021 & fecha>1977) %>% ggplot(aes(utilidad, letterboxd)) + geom_text(aes(label=titulo),vjust=-0.5, check_overlap = T)+ 
+  geom_hline(yintercept = 3.3)+
+  geom_vline(xintercept = 0)+
+  annotate(geom = "text", x = -0.5,y=2.35,label="Mal en taquilla y puntaje",family="BRLNSR", fontface='bold')+
+  annotate(geom = "text", x = -0.5,y=4,label="Mal en taquilla y bien puntaje",family="BRLNSR", fontface='bold')+
+   annotate(geom = "text", x = 0.5,y=4,label="Bien en taquilla y bien puntaje",family="BRLNSR", fontface='bold')+
+   annotate(geom = "text", x = 0.5,y=2.355,label="Bien en taquilla y mal puntaje",family="BRLNSR", fontface='bold')
+  
+```
+Es sorprendente que el cuadrante inferior derecho este vacío. Porque indica que no tiene "blockbusters" 
+
+##PRESENTE
+```{r}
+presente<- ridley %>%  filter(presente==1)
+presente %>% group_by(tiempo)%>% summarise(sum(director))
+```
+
+### PUNTAJES
+
+```{r}
+puntajes<- presente %>% summarise(fecha,titulo, director, letterboxd)
+
+ggplot(puntajes)+
+geom_segment(aes(x=titulo,xend=titulo,y=0,yend=letterboxd),size=1,position = position_dodge(width = 0.6))+
+  geom_point(aes(x=titulo, y=letterboxd),size=2, color='#FFA500', fill=alpha("#ffde5c",0.3), alpha=0.7,shape=21, stroke=2)+
+  scale_y_continuous(limit=c(0,5), breaks=seq(0,5,1))+
+   labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Puntaje de sus películas del pasado", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Rotten Tomatoes**.</span>")+
+                                    theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y= element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK"), axis.ticks.y = element_line(),axis.text.x= element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK", angle = 45, vjust = 0.5))
+```
+
+### PRESUPUESTO Y RECAUDACION
+
+```{r}
+plata <- presente %>% summarise(fecha, titulo, budget.real,box.office.domestic.real, utilidad=(box.office.domestic.real-budget.real)/budget.real,letterboxd)
+
+plata<- plata %>% mutate(titulo=fct_reorder(titulo,fecha),                                                                color=case_when(utilidad<= 0 ~"PERDIDA",
+                 utilidad>0 ~ "BENEFICIO"))
+
+plata %>% mutate(titulo=fct_reorder(titulo,fecha)) %>% ggplot( aes(x=titulo, y=utilidad, fill=color))+
+  geom_bar(stat="identity")+
+  geom_hline(yintercept=0)+
+  scale_fill_brewer(palette="YlOrRd")+
+  scale_y_continuous(labels = percent_format(), breaks=seq(-1.5,1.5,0.5))+
+  labs(x="", title="<span style='color: #FA8806;'>**Ridley Scott**</span>", subtitle = "Beneficio sobre presupuesto de películas del presente", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de Wikipedia y Box Office Mojo**.</span>")+
+  theme(plot.title.position = "plot",plot.title = element_markdown(family="BRLNSR", size=26),plot.subtitle = element_markdown(family="BRLNSR", size=16), panel.background = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8,hjust=0,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK",angle = 45, vjust=0.6), axis.ticks.x = element_blank(), axis.text.y= element_markdown(size=9.5,family = "BRLNSR", colour = "BLACK"))
+```
+
+# PUNTAJES Y PLATA
+```{r}
+ggplot(plata,aes(utilidad,letterboxd))+
+  geom_text(aes(label=titulo),check_overlap = T)+
+  geom_hline(yintercept = 3.3)+
+  geom_vline(xintercept = 0)
+```
+## FUTURO 
+
+### PRESUPUESTO Y RECAUDACION
+
+
+### PUNTAJES
+
+### MOMENTOS DE LARGADA 
+
+
+## TOTAL 
+
+### RENDIMIENTOS PRESUPUSTO/RECAUDACION // PUNTAJES
+```{r}
+rendimientos<- ridley %>% summarise(fecha,titulo,letterboxd,rend=(box.office.domestic.real/budget.real),budget.real,openening.domestic.real,box.office.domestic.real,utilidad=(box.office.domestic.real-budget.real)/budget.real) 
+#Excluyendo The Duellists por falta de datos de recaudación
+
+rendimientos<-rendimientos[-c(1), ]
+
+rendimientos %>% filter(fecha<2021) %>% ggplot(aes(y=letterboxd, x=utilidad, label=titulo))+
+  geom_text(aes(label=titulo), vjust=-0.5,check_overlap = TRUE)+
+  geom_vline(xintercept =0 )+
+  geom_hline(yintercept =3.3)+
+  scale_x_continuous(labels = percent_format(), breaks = seq(-2,7,1), limits = c(-2,7))
+```
+
+
+### ACTORES GRAFICOS CHAIN
+```{r}
+actores<- ridley %>% summarise(protagonista,reparto.1)
+
+network<-graph_from_data_frame(d=actores, directed = F)
+deg <- degree(network, mode="all")
+
+plot(network, vertex.size=deg*6, vertex.color=rgb(0.1,0.7,0.8,0.5),
+     edge.color="white",                           # Edge color
+    edge.width=4,                                 # Edge width, defaults to 1
+    edge.arrow.size=1,                            # Arrow size, defaults to 1
+    edge.arrow.width=1,                           # Arrow width, defaults to 1
+    edge.lty="solid",                             # Line type, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+    edge.curved=0.3)
+
+```
+
+
+### ARGENTINA
+
+
+### MOMENTOS DE LARGADA 
+
+Mucho se habla de que hay películas para premios y otras para box office (recaudación). Si bien no hay una definición oficial para la "Oscar Season", Vanity Fair, una de los principales medios en el mundo del cine establece que esta arranca con el otoño del hemisferio norte (22 de Septiembre) y termina junto a mediados de Febrero cuando la Academia cierra la lista de las películas que forman parte de la nómina. 
+Por el otro lado, el verano en el hemisferio norte (Junio, Julio y Agosto) suele ser el momento indicado para que los estudios lancen sus películas con más proyección de taquillas. En algunos años también se agrega la primavera, por motivos de practicidad aquí estarán juntas. 
+
+```{r}
+momentos<- pasado %>% summarise(date, titulo)
+momentos$date<- as.Date(momentos$date)
+
+momentos<- momentos %>% mutate(season= case_when(date==as.Date("1977-08-31")~"OSCAR SEASON",
+                                                 date==as.Date("1992-10-09")~"OSCAR SEASON",
+                                                 date==as.Date("1996-02-02")~"OSCAR SEASON",
+                                                 date==as.Date("2000-05-04")~"BLOCKBUSTER SEASON",
+                                                 date==as.Date("2001-10-28")~"OSCAR SEASON",
+                                                 date==as.Date("2005-05-04")~"BLOCKBUSTER SEASON",
+                                                 date==as.Date("2010-05-12")~"BLOCKBUSTER SEASON",
+                                                 date==as.Date("2014-12-12")~"OSCAR SEASON",
+                                                 date==as.Date("2017-12-21")~"OSCAR SEASON",
+                                                 date==as.Date("2021-10-15")~"OSCAR SEASON",
+                                                 date==as.Date("2021-11-24")~"OSCAR SEASON"))
+hsize<- 2
+cantidad<-1
+momentos<- momentos %>% mutate(x=hsize, cantidad=cantidad) 
+momentos2<- momentos %>% group_by(season) %>% summarise(sum(cantidad))
+
+ggplot(momentos2, aes(x=hsize, y=cantidad, fill=season))+
+  geom_col()+
+  coord_polar(theta = 'y')+
+  geom_text(aes(label = cantidad),position = position_stack(vjust = 0.5), color="#4F4F4F", family="BRLNSR")+
+  xlim(c(0.2, hsize + 0.5))+
+  scale_fill_manual(values =c("#ffde5c","#FA8806","#000000"))+
+  labs(x="", title="<span style='color: #FFA500;'>**Ridley Scott**</span>", subtitle = "Porcentaje de actuaciones según **Blockbuster** o <span style='color:#ffde5c;'> **Oscar**</span> season", caption = "<span style='color:#4F4F4F;'> **Fuente: Maximiliano Ros en base a datos de IMDb**.</span>")+
+  theme(plot.title.position = "plot",plot.title = element_markdown(size=14, hjust = -0.48, family = "Eastwood"),plot.subtitle = element_markdown(size=12, hjust = 0.97, family="BRLNSR"), panel.background = element_blank(),axis.text.x = element_blank(), axis.text.y = element_blank(),axis.ticks = element_blank(),plot.caption = element_markdown(size=8, hjust=-1.1,family = "BRLNSR" ), text = element_text(family = ""),panel.grid.major = element_blank(),legend.position = "none",legend.box.background =  element_blank(), axis.title.x = element_blank())
+```
